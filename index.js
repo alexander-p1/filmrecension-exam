@@ -1,19 +1,28 @@
 import express from "express";
-import mongoose from "mongoose";
+import cors from "cors";
 import "dotenv/config";
-import { movieRoutes, reviewRoutes, userRoutes } from "./routes";
+import connectDB from "./config/database.js";
+// Route imports
+import movieRoutes from "./routes/movieRoutes.js";
+import reviewRoutes from "./routes/reviewRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
 
-const PORT = process.env.PORT || 5001;
-const MONGO_URI = process.env.MONGO_URI;
+const PORT = process.env.PORT || 8000;
 const app = express();
 
-mongoose.connect(MONGO_URI);
-app.use(express.json())
+connectDB();
 
-// Routes 
+app.use(cors());
+app.use(express.json());
+
+// Routes
 app.use("/api/users", userRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/movies", movieRoutes);
+
+app.get("/", (req, res) => {
+  res.json({ message: "Your API is working!" });
+});
 
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

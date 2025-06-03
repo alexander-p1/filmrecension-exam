@@ -7,7 +7,7 @@ const router = express.Router();
 router.post("/", auth, reviewController.createReview);
 router.get("/", auth, reviewController.getAllReviews);
 router.get("/:id", auth, reviewController.getReviewById);
-router.put("/:id", auth, reviewController.updateReviewById);
-router.delete("/:id", auth, reviewController.deleteReviewById);
+router.put("/:id", auth, reviewController.updateReview);
+router.delete("/:id", auth, reviewController.deleteReview);
 
 export default router;
