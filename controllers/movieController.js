@@ -2,26 +2,10 @@ import Movie from "../models/Movie.js";
 import Review from "../models/Review.js";
 
 // Create a new movie
-const createMovie = async (req, res) => {
+export const createMovie = async (req, res) => {
   try {
     const { title, director, releaseYear, genre } = req.body;
 
-    // Check if movie already exists
-    const existingMovie = await Movie.findOne({
-      title: title.trim(),
-      director: director.trim(),
-      releaseYear,
-    });
-
-    if (existingMovie) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Movie with this title, director and release year already exists",
-      });
-    }
-
-    // Create new movie
     const movie = new Movie({
       title,
       director,
@@ -46,26 +30,9 @@ const createMovie = async (req, res) => {
 };
 
 // Get all movies
-const getAllMovies = async (req, res) => {
+export const getAllMovies = async (req, res) => {
   try {
-    const { genre, year, search } = req.query;
-    let filter = {};
-
-    // Apply filters if provided
-    if (genre) {
-      filter.genre = { $regex: genre, $options: "i" };
-    }
-    if (year) {
-      filter.releaseYear = year;
-    }
-    if (search) {
-      filter.$or = [
-        { title: { $regex: search, $options: "i" } },
-        { director: { $regex: search, $options: "i" } },
-      ];
-    }
-
-    const movies = await Movie.find(filter).sort({ createdAt: -1 });
+    const movies = await Movie.find().sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
@@ -82,7 +49,7 @@ const getAllMovies = async (req, res) => {
 };
 
 // Get movie by ID
-const getMovieById = async (req, res) => {
+export const getMovieById = async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -109,20 +76,16 @@ const getMovieById = async (req, res) => {
 };
 
 // Update movie
-const updateMovie = async (req, res) => {
+export const updateMovie = async (req, res) => {
   try {
     const { id } = req.params;
     const { title, director, releaseYear, genre } = req.body;
 
-    // Check if user is admin (assuming only admins can update movies)
-    if (req.user.role !== "admin") {
-      return res.status(403).json({
-        success: false,
-        message: "Not authorized to update movies",
-      });
-    }
-
-    const movie = await Movie.findById(id);
+    const movie = await Movie.findByIdAndUpdate(
+      id,
+      { title, director, releaseYear, genre },
+      { new: true }
+    );
 
     if (!movie) {
       return res.status(404).json({
@@ -130,14 +93,6 @@ const updateMovie = async (req, res) => {
         message: "Movie not found",
       });
     }
-
-    // Update movie fields
-    movie.title = title || movie.title;
-    movie.director = director || movie.director;
-    movie.releaseYear = releaseYear || movie.releaseYear;
-    movie.genre = genre || movie.genre;
-
-    await movie.save();
 
     res.status(200).json({
       success: true,
@@ -154,19 +109,11 @@ const updateMovie = async (req, res) => {
 };
 
 // Delete movie
-const deleteMovie = async (req, res) => {
+export const deleteMovie = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Check if user is admin (assuming only admins can delete movies)
-    if (req.user.role !== "admin") {
-      return res.status(403).json({
-        success: false,
-        message: "Not authorized to delete movies",
-      });
-    }
-
-    const movie = await Movie.findById(id);
+    const movie = await Movie.findByIdAndDelete(id);
 
     if (!movie) {
       return res.status(404).json({
@@ -175,11 +122,8 @@ const deleteMovie = async (req, res) => {
       });
     }
 
-    // Delete all reviews for this movie first
+    // Delete all reviews for this movie
     await Review.deleteMany({ movieId: id });
-
-    // Delete the movie
-    await Movie.findByIdAndDelete(id);
 
     res.status(200).json({
       success: true,
@@ -195,11 +139,10 @@ const deleteMovie = async (req, res) => {
 };
 
 // Get all reviews for a specific movie
-const getMovieReviews = async (req, res) => {
+export const getMovieReviews = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Check if movie exists
     const movie = await Movie.findById(id);
     if (!movie) {
       return res.status(404).json({
@@ -208,7 +151,6 @@ const getMovieReviews = async (req, res) => {
       });
     }
 
-    // Get all reviews for this movie
     const reviews = await Review.find({ movieId: id })
       .populate("userId", "username")
       .sort({ createdAt: -1 });
@@ -232,13 +174,4 @@ const getMovieReviews = async (req, res) => {
       error: error.message,
     });
   }
-};
-
-export default {
-  createMovie,
-  getAllMovies,
-  getMovieById,
-  updateMovie,
-  deleteMovie,
-  getMovieReviews,
 };
